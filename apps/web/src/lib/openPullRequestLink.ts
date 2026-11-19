@@ -1,6 +1,6 @@
 import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { parsePullRequestAnchor } from "@t3tools/shared/pullRequestAnchor";
-import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import type { EnvironmentId, ProjectId, ScopedThreadRef } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
 import { type MouseEvent } from "react";
@@ -47,6 +47,7 @@ export function usePullRequestPreviewTarget(environmentId: EnvironmentId | null,
 export function pullRequestLinkPanelTarget(input: {
   readonly url: string;
   readonly environmentId: EnvironmentId | undefined;
+  readonly projectId?: ProjectId | undefined;
   readonly primaryEnvironmentId: EnvironmentId | null;
   readonly lendHostProject: boolean;
 }) {
@@ -59,6 +60,7 @@ export function pullRequestLinkPanelTarget(input: {
     projects: readProjects(),
     configLoaded: (environmentId) => serverConfigs.has(environmentId),
     environmentId: input.environmentId,
+    projectId: input.projectId,
     primaryEnvironmentId: input.primaryEnvironmentId,
     lendHostProject: input.lendHostProject,
   });
@@ -103,6 +105,7 @@ export function useOpenChangeRequestLink(
       const target = pullRequestLinkPanelTarget({
         url: targetUrl,
         environmentId: resolvedThreadRef?.environmentId ?? targetEnvironmentId,
+        projectId: resolvedThreadRef ? readThreadShell(resolvedThreadRef)?.projectId : undefined,
         primaryEnvironmentId,
         lendHostProject: resolvedPanelRef !== undefined,
       });
