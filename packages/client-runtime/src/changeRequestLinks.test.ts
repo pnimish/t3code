@@ -128,6 +128,29 @@ describe("resolveChangeRequestLinkTarget", () => {
     ).toEqual({ project: sibling, host: "github.com", repository: "acme/app", number: 7 });
   });
 
+  it("lends a link's own project whose folder is not a checkout, on a public host only", () => {
+    const folder = { id: ProjectId.make("folder"), environmentId: local, repositoryIdentity: null };
+    const target = (input: { url: string; projectId?: ProjectId; lendHostProject?: boolean }) =>
+      resolveChangeRequestLinkTarget({
+        projects: [folder],
+        configLoaded: loaded,
+        environmentId: local,
+        lendHostProject: true,
+        ...input,
+      });
+    expect(target({ url, projectId: folder.id })).toEqual({
+      project: folder,
+      host: "github.com",
+      repository: "acme/app",
+      number: 7,
+    });
+    expect(target({ url })).toBeNull();
+    expect(target({ url, projectId: folder.id, lendHostProject: false })).toBeNull();
+    expect(
+      target({ url: "https://git.example.test/acme/app/pull/7", projectId: folder.id }),
+    ).toBeNull();
+  });
+
   it("only borrows a host project for views that can show any repository on the host", () => {
     expect(
       resolveChangeRequestLinkTarget({

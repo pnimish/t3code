@@ -46,6 +46,21 @@ export function findProjectOnChangeRequestHost<Project extends ChangeRequestProj
 }
 
 /**
+ * A project folder that is not itself a checkout (repositories one level down) has no remote to
+ * match, so the link's own project lends itself for a public host the server reads by token.
+ */
+function lendNonGitProject<Project extends ChangeRequestProject>(
+  projects: ReadonlyArray<Project>,
+  link: ChangeRequestLink,
+  projectId: ProjectId | undefined,
+): Project | undefined {
+  if (projectId === undefined || sourceControlClients.findByPublicHost(link.host) === undefined) {
+    return undefined;
+  }
+  return projects.find((project) => project.id === projectId && project.repositoryIdentity == null);
+}
+
+/**
  * Where every client opens a change request link in the app, or null for the browser. A link
  * opened into a pull request view may borrow any project on its host, so a mirror's or a
  * sibling repository's link still opens in the app.
@@ -89,7 +104,10 @@ export function resolveChangeRequestLinkTarget<Project extends ChangeRequestProj
   );
   const project =
     findProjectForChangeRequest(candidates, link) ??
-    (lendHostProject ? findProjectOnChangeRequestHost(candidates, link) : undefined);
+    (lendHostProject
+      ? (findProjectOnChangeRequestHost(candidates, link) ??
+        lendNonGitProject(candidates, link, projectId))
+      : undefined);
   if (project === undefined || !configLoaded(project.environmentId)) return null;
   return {
     project,
