@@ -392,6 +392,23 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
         </ListSection>
       ) : null}
 
+      {sourceControl.discovered.length > 0 ? (
+        <ListSection title={gt("Changes")}>
+          {sourceControl.discovered.map((entry) => (
+            <ListRow
+              key={entry.worktreePath}
+              icon="folder"
+              label={entry.repository}
+              description={
+                entry.worktreePath === sourceControl.sourceControlCwd
+                  ? gt("Use for Git and changes")
+                  : entry.worktreePath
+              }
+              onPress={() => sourceControl.select(entry.worktreePath)}
+            />
+          ))}
+        </ListSection>
+      ) : null}
       <RepoWorktreesGroup
         environmentId={environmentId}
         threadId={threadId}

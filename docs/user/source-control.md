@@ -10,6 +10,12 @@ rebases, the files Git brought in are left out. A file stays in the list when th
 committed it, or fixed a conflict in it. Use the branch comparison to review everything that changed
 against your base branch. Restore still returns the complete saved workspace.
 
+If your project folder contains separate Git checkouts, open **Changes** to review one checkout
+before opening a pull request. T3 Code finds repositories directly inside the folder and uses the
+most recent file edit it can match when the thread has no attached worktree. Use the repository
+picker to switch checkouts. The comparison shows the selected checkout's current changes, including
+edits made outside the thread.
+
 On web and desktop, open the Diff pane source picker and choose **Commits** to review one local
 commit at a time. The list shows the newest 100 commits in the branch comparison. A merge commit
 shows its changes against its first parent.

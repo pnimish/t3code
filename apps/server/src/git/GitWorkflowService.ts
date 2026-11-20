@@ -1,3 +1,4 @@
+import * as Path from "effect/Path";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -193,6 +194,36 @@ export const make = Effect.gen(function* () {
   const git = yield* GitVcsDriver.GitVcsDriver;
   const gitManager = yield* GitManager.GitManager;
   const fileSystem = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+
+  const childRepositories = Effect.fn("GitWorkflowService.childRepositories")(function* (
+    cwd: string,
+  ) {
+    const root = yield* fileSystem.realPath(cwd);
+    const names = yield* fileSystem.readDirectory(root);
+    return yield* Effect.filter(
+      names.toSorted(),
+      (name) => {
+        const child = path.join(root, name);
+        return fileSystem.exists(path.join(child, ".git")).pipe(
+          Effect.flatMap((exists) =>
+            exists
+              ? fileSystem.realPath(child).pipe(Effect.map((resolved) => resolved === child))
+              : Effect.succeed(false),
+          ),
+          Effect.orElseSucceed(() => false),
+        );
+      },
+      { concurrency: 8 },
+    );
+  });
+  const withChildren = <T extends VcsStatusLocalResult>(cwd: string, status: T) =>
+    childRepositories(cwd).pipe(
+      Effect.map((children) =>
+        children.length ? { ...status, childRepositories: children } : status,
+      ),
+      Effect.orElseSucceed(() => status),
+    );
 
   // Nested projects and path aliases must share the checkout's branch-mutation lease.
   const withCheckoutLease = <A, E, R>(rootPath: string, effect: Effect.Effect<A, E, R>) =>
@@ -338,7 +369,9 @@ export const make = Effect.gen(function* () {
     status: Effect.fn("GitWorkflowService.status")(function (input) {
       return detectGitRepositoryForStatus("GitWorkflowService.status", input.cwd).pipe(
         Effect.flatMap((isGitRepository) =>
-          isGitRepository ? gitManager.status(input) : Effect.succeed(nonRepositoryStatus()),
+          isGitRepository
+            ? gitManager.status(input)
+            : withChildren(input.cwd, nonRepositoryStatus()),
         ),
       );
     }),
@@ -347,7 +380,7 @@ export const make = Effect.gen(function* () {
         Effect.flatMap((isGitRepository) =>
           isGitRepository
             ? gitManager.localStatus(input, options)
-            : Effect.succeed(nonRepositoryLocalStatus()),
+            : withChildren(input.cwd, nonRepositoryLocalStatus()),
         ),
       );
     }),

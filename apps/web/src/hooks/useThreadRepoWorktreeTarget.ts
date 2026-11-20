@@ -1,5 +1,8 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { resolveSelectedRepoWorktree } from "@t3tools/client-runtime/state/threads";
+import {
+  childRepositoryTargets,
+  resolveSelectedRepoWorktree,
+} from "@t3tools/client-runtime/state/threads";
 import type { ScopedThreadRef, ThreadRepoWorktree } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 
@@ -9,6 +12,7 @@ import { environmentThreadDetails } from "../state/threads";
 import { vcsEnvironment } from "../state/vcs";
 
 const NO_REPO_WORKTREES = Atom.make<ReadonlyArray<ThreadRepoWorktree>>([]);
+const EMPTY_ITEMS = Atom.make<readonly never[]>([]);
 const NO_SELECTION = Atom.make<string | null | undefined>(undefined);
 
 /**
@@ -20,7 +24,7 @@ export function useThreadRepoWorktreeTarget(input: {
   /** The thread's own workspace: its worktree or the project folder. */
   readonly workspaceCwd: string | null;
 }) {
-  const repoWorktrees = useAtomValue(
+  const attached = useAtomValue(
     input.threadRef === null
       ? NO_REPO_WORKTREES
       : environmentThreadDetails.repoWorktreesAtom(input.threadRef),
@@ -33,13 +37,23 @@ export function useThreadRepoWorktreeTarget(input: {
   const setSelection = useAtomSet(selectionAtom);
   // Shared with the thread's own status query, so this costs nothing extra.
   const workspaceStatus = useEnvironmentQuery(
-    input.threadRef !== null && input.workspaceCwd !== null && repoWorktrees.length > 0
+    input.threadRef !== null && input.workspaceCwd !== null
       ? vcsEnvironment.status({
           environmentId: input.threadRef.environmentId,
           input: { cwd: input.workspaceCwd },
         })
       : null,
   );
+  const children = workspaceStatus.data?.childRepositories;
+  const items = useAtomValue(
+    input.threadRef && children?.length
+      ? environmentThreadDetails.quietVisibleTurnItemsAtom(input.threadRef)
+      : EMPTY_ITEMS,
+  );
+  const discovered = childRepositoryTargets(input.workspaceCwd, children, items).filter(
+    (child) => !attached.some((entry) => entry.repository === child.repository),
+  );
+  const repoWorktrees = [...attached, ...discovered];
   const repoWorktree = resolveSelectedRepoWorktree({
     repoWorktrees,
     selection,

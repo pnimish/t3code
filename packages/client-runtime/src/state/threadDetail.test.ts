@@ -26,6 +26,7 @@ import type { ThreadStructureVisibleTurnItem } from "./models.ts";
 import {
   createEnvironmentThreadDetailAtoms,
   deriveWorkspaceMutationId,
+  childRepositoryTargets,
   resolveSelectedRepoWorktree,
   sameThreadStructure,
 } from "./threadDetail.ts";
@@ -566,6 +567,25 @@ describe("resolveSelectedRepoWorktree", () => {
     attachedAt: "2026-11-04T00:00:00.000Z",
   });
   const repoWorktrees = [repoWorktree("alpha"), repoWorktree("beta")];
+
+  it("selects the checkout edited by the thread before a PR exists", () => {
+    const edits = ["web/older.ts", "/folder/auth/model/page.py", "/elsewhere/web/outside.ts"].map(
+      (fileName) => ({ item: { type: "file_change", fileName } }) as ThreadStructureVisibleTurnItem,
+    );
+    const targets = childRepositoryTargets("/folder", ["admin", "auth", "web"], edits);
+    expect(targets.map((entry) => entry.worktreePath)).toEqual([
+      "/folder/auth",
+      "/folder/web",
+      "/folder/admin",
+    ]);
+    expect(
+      resolveSelectedRepoWorktree({
+        repoWorktrees: targets,
+        selection: "/folder/web",
+        workspaceIsRepository: false,
+      })?.repository,
+    ).toBe("web");
+  });
 
   it("shows a repository's changes when the folder itself is not a Git repository", () => {
     expect(

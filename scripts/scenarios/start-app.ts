@@ -136,6 +136,8 @@ const startApp = Effect.fn("startApp")(function* (input: {
   const env = {
     ...hostEnvironment,
     PATH: `${path.join(input.home, "bin")}:${hostEnvironment.PATH ?? ""}`,
+    // Folder fixtures live under this checkout, but must not inherit its Git repository.
+    GIT_CEILING_DIRECTORIES: path.join(input.home, "workspaces"),
     T3CODE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD: "0",
   };
   const devRunner = (mode: string, args: ReadonlyArray<string>) => [

@@ -49,16 +49,47 @@ const EMPTY_VISIBLE_TURN_ITEMS: OrchestrationV2ThreadProjection["visibleTurnItem
 );
 const EMPTY_REPO_WORKTREES: ReadonlyArray<ThreadRepoWorktree> = Object.freeze([]);
 
+export type RepositoryTarget = Pick<ThreadRepoWorktree, "repository" | "worktreePath"> & {
+  readonly branch?: string;
+};
+
+export function childRepositoryTargets(
+  workspace: string | null,
+  children: ReadonlyArray<string> | undefined,
+  items: ReadonlyArray<ThreadStructureVisibleTurnItem>,
+): RepositoryTarget[] {
+  if (!workspace || !children?.length) return [];
+  const prefix = workspace.replaceAll("\\", "/").replace(/\/+$/, "") + "/";
+  const touched = new Set<string>();
+  for (let index = items.length - 1; index >= 0; index--) {
+    const { item } = items[index]!;
+    if (item.type !== "file_change") continue;
+    for (const file of [item.fileName, ...(item.changes ?? []).map((change) => change.path)]) {
+      const normalized = file.replaceAll("\\", "/");
+      const relative = normalized.startsWith(prefix)
+        ? normalized.slice(prefix.length)
+        : normalized.replace(/^\.\//, "");
+      const name = relative.split("/")[0];
+      if (name && children.includes(name)) touched.add(name);
+    }
+  }
+  return [...new Set([...touched, ...children])].map((repository) => ({
+    repository,
+    worktreePath:
+      workspace.replace(/[\\/]+$/, "") + (workspace.includes("\\") ? "\\" : "/") + repository,
+  }));
+}
+
 /**
  * The repository worktree a thread's Changes and Git actions use, or null for its own workspace.
  * `selection` is a worktree path, null for the workspace, or undefined for no choice; without
  * one, a workspace that is not a Git repository uses its first repository worktree.
  */
-export function resolveSelectedRepoWorktree(input: {
-  readonly repoWorktrees: ReadonlyArray<ThreadRepoWorktree>;
+export function resolveSelectedRepoWorktree<T extends RepositoryTarget>(input: {
+  readonly repoWorktrees: ReadonlyArray<T>;
   readonly selection: string | null | undefined;
   readonly workspaceIsRepository: boolean;
-}): ThreadRepoWorktree | null {
+}): T | null {
   if (input.selection === null) return null;
   const chosen =
     input.selection === undefined

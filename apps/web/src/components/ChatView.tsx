@@ -1777,7 +1777,10 @@ export default function ChatView(props: ChatViewProps) {
   const isGitRepo = liveIsGitRepo ?? recallCheckoutIsRepo(environmentId, gitStatusCwd) ?? true;
   // A folder that is not a repository still shows the changes of its repository worktrees.
   const changesAvailable =
-    isServerThread && (isGitRepo || (serverProjection?.thread.repoWorktrees?.length ?? 0) > 0);
+    isServerThread &&
+    (isGitRepo ||
+      gitStatusQuery.data?.hasChildRepos ||
+      (serverProjection?.thread.repoWorktrees?.length ?? 0) > 0);
   // Provider-native subagents cannot take messages; approvals and questions go to the top-level parent.
   const showProviderSubagentBar = isProviderSubagent;
   const composerMounted = !showProviderSubagentBar;

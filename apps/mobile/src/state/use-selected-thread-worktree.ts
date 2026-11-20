@@ -1,5 +1,8 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { resolveSelectedRepoWorktree } from "@t3tools/client-runtime/state/threads";
+import {
+  childRepositoryTargets,
+  resolveSelectedRepoWorktree,
+} from "@t3tools/client-runtime/state/threads";
 import type { ThreadRepoWorktree } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 
@@ -11,6 +14,7 @@ import { vcsEnvironment } from "./vcs";
 import { resolvePreferredThreadWorktreePath } from "../features/terminal/terminalLaunchContext";
 
 const NO_REPO_WORKTREES = Atom.make<ReadonlyArray<ThreadRepoWorktree>>([]);
+const EMPTY_ITEMS = Atom.make<readonly never[]>([]);
 const NO_SELECTION = Atom.make<string | null | undefined>(undefined);
 
 export function useSelectedThreadWorktree() {
@@ -40,7 +44,7 @@ export function useSelectedThreadSourceControl() {
     selectedThread === null
       ? null
       : { environmentId: selectedThread.environmentId, threadId: selectedThread.id };
-  const repoWorktrees = useAtomValue(
+  const attached = useAtomValue(
     threadRef === null ? NO_REPO_WORKTREES : environmentThreadDetails.repoWorktreesAtom(threadRef),
   );
   const selectionAtom =
@@ -50,13 +54,23 @@ export function useSelectedThreadSourceControl() {
   const selection = useAtomValue(selectionAtom);
   const setSelection = useAtomSet(selectionAtom);
   const workspaceStatus = useEnvironmentQuery(
-    threadRef !== null && selectedThreadCwd !== null && repoWorktrees.length > 0
+    threadRef !== null && selectedThreadCwd !== null
       ? vcsEnvironment.status({
           environmentId: threadRef.environmentId,
           input: { cwd: selectedThreadCwd },
         })
       : null,
   );
+  const children = workspaceStatus.data?.childRepositories;
+  const items = useAtomValue(
+    threadRef && children?.length
+      ? environmentThreadDetails.quietVisibleTurnItemsAtom(threadRef)
+      : EMPTY_ITEMS,
+  );
+  const discovered = childRepositoryTargets(selectedThreadCwd, children, items).filter(
+    (child) => !attached.some((entry) => entry.repository === child.repository),
+  );
+  const repoWorktrees = [...attached, ...discovered];
   const repoWorktree = resolveSelectedRepoWorktree({
     repoWorktrees,
     selection,
@@ -67,6 +81,7 @@ export function useSelectedThreadSourceControl() {
     repoWorktrees,
     repoWorktree,
     select,
+    discovered,
     sourceControlCwd: repoWorktree?.worktreePath ?? selectedThreadCwd,
   };
 }

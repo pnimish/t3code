@@ -492,7 +492,7 @@ export default function DiffPanel({
         : gt("{scope} in {repository} · {branch}", {
             scope: selectedGitScopeLabel,
             repository: selectedRepoWorktree.repository,
-            branch: selectedRepoWorktree.branch,
+            branch: selectedRepoWorktree.branch ?? gitStatusQuery.data?.refName ?? "HEAD",
           });
   const headerCommitSha = selectedRunId === null ? selectedCommitSha : null;
   // The project's identity names its own repository, not a selected repository worktree's.

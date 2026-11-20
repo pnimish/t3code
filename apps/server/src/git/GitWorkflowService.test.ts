@@ -19,7 +19,12 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("GitWorkflowServi
       const fileSystem = yield* FileSystem.FileSystem;
       const cwd = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-ref-named-" });
       const workflow = yield* GitWorkflowService.GitWorkflowService;
+      const folder = yield* fileSystem.makeTempDirectoryScoped();
+      yield* fileSystem.makeDirectory(folder + "/auth");
+      yield* fileSystem.makeDirectory(folder + "/notes");
       const driver = yield* GitVcsDriver.GitVcsDriver;
+      yield* driver.execute({ operation: "test.initChild", cwd: folder + "/auth", args: ["init"] });
+      assert.deepEqual((yield* workflow.localStatus({ cwd: folder })).childRepositories, ["auth"]);
       for (const args of [
         ["init", "-b", "main"],
         ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "--allow-empty", "-m", "init"],
@@ -40,6 +45,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("GitWorkflowServi
         GitWorkflowService.layer.pipe(
           Layer.provide(
             Layer.mock(VcsDriverRegistry.VcsDriverRegistry)({
+              detect: () => Effect.succeed(null),
               resolve: () => Effect.succeed({ kind: "git" } as VcsDriverRegistry.VcsDriverHandle),
             }),
           ),

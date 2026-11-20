@@ -61,7 +61,9 @@ export function useReviewSections(input: {
   const { sourceControlCwd: selectedThreadCwd, repoWorktree } = useSelectedThreadSourceControl();
   // Review comments carry the section title, so it names the repository their paths belong to.
   const gitSectionSuffix =
-    repoWorktree === null ? "" : ` in ${repoWorktree.repository} · ${repoWorktree.branch}`;
+    repoWorktree === null
+      ? ""
+      : ` in ${[repoWorktree.repository, repoWorktree.branch].filter(Boolean).join(" · ")}`;
   const diffPreview = useEnvironmentQuery(
     canReadFiles && enabled && environmentId !== undefined && selectedThreadCwd !== null
       ? reviewEnvironment.diffPreview({

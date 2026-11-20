@@ -17,7 +17,7 @@ import { useAtomCommand } from "../../../state/use-atom-command";
 export function RepoWorktreesGroup(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
-  readonly selected: ThreadRepoWorktree | null;
+  readonly selected: Pick<ThreadRepoWorktree, "worktreePath"> | null;
   /** What Git actions use when no repository worktree is selected. */
   readonly workspace: "thread-worktree" | "project-folder";
   readonly onSelect: (worktreePath: string | null) => void;

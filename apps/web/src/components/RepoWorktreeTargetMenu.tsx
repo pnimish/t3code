@@ -1,4 +1,4 @@
-import type { ThreadRepoWorktree } from "@t3tools/contracts";
+import type { RepositoryTarget } from "@t3tools/client-runtime/state/threads";
 import { useGT } from "gt-react";
 import { ChevronDownIcon, FolderGit2Icon } from "lucide-react";
 
@@ -15,8 +15,8 @@ const WORKSPACE_VALUE = "__thread_workspace__";
 
 /** Picks the repository a thread's Changes and Git actions work in. */
 export function RepoWorktreeTargetMenu(props: {
-  readonly repoWorktrees: ReadonlyArray<ThreadRepoWorktree>;
-  readonly selected: ThreadRepoWorktree | null;
+  readonly repoWorktrees: ReadonlyArray<RepositoryTarget>;
+  readonly selected: RepositoryTarget | null;
   readonly workspaceLabel: string;
   readonly onSelect: (worktreePath: string | null) => void;
 }) {
@@ -25,7 +25,7 @@ export function RepoWorktreeTargetMenu(props: {
   const label =
     props.selected === null
       ? props.workspaceLabel
-      : `${props.selected.repository} · ${props.selected.branch}`;
+      : [props.selected.repository, props.selected.branch].filter(Boolean).join(" · ");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
