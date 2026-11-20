@@ -18,6 +18,8 @@ import {
   ArrowUpRightIcon,
   BookOpenIcon,
   CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
   HammerIcon,
   LinkIcon,
   MessageCircleQuestionIcon,
@@ -62,7 +64,67 @@ import type { PickableEnvironment } from "./pullRequestProjectAssignment.logic";
 import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
 
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { canStartThreadPullRequestWatch } from "@t3tools/client-runtime/thread-pull-request-compatibility";
+import { threadPullRequestKeysEqual } from "@t3tools/client-runtime/thread-pull-requests";
+import { useServerConfigs, useThreadShell } from "~/state/entities";
+import { threadEnvironment } from "~/state/threads";
+
 import { changeRequestTermKind } from "./changeRequestTerm";
+
+function PullRequestWatchMenuItem({
+  environmentId,
+  threadRef,
+  url,
+  open,
+}: {
+  environmentId: EnvironmentId;
+  threadRef: ScopedThreadRef | null;
+  url: string;
+  open: boolean;
+}) {
+  const gt = useGT();
+  const thread = useThreadShell(threadRef?.environmentId === environmentId ? threadRef : null);
+  const capabilities = useServerConfigs().get(environmentId)?.environment.capabilities;
+  const watch = useAtomCommand(threadEnvironment.watchPullRequest, { reportFailure: true });
+  const [pending, setPending] = useState(false);
+  const target = sourceControlClients.parseChangeRequestUrl(url)?.link;
+  const watching =
+    target !== undefined &&
+    thread?.pullRequests.some(
+      (link) => threadPullRequestKeysEqual(link, target) && link.watch !== undefined,
+    ) === true;
+  if (
+    !open ||
+    capabilities?.threadPullRequestWatch !== true ||
+    thread === null ||
+    target === undefined ||
+    (!watching && !canStartThreadPullRequestWatch(thread))
+  )
+    return null;
+
+  const setWatching = async () => {
+    if (pending) return;
+    setPending(true);
+    await watch({
+      environmentId,
+      input: {
+        threadId: thread.id,
+        host: target.host,
+        repository: target.repository,
+        number: target.number,
+        watching: !watching,
+      },
+    });
+    setPending(false);
+  };
+  return (
+    <MenuItem disabled={pending} onClick={() => void setWatching()}>
+      {watching ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
+      {watching ? gt("Stop watching") : gt("Watch for changes")}
+    </MenuItem>
+  );
+}
 
 /** Everything else the reader can do with the pull request, behind the header's overflow button. */
 export function PullRequestActionsMenu({
@@ -258,6 +320,12 @@ export function PullRequestActionsMenu({
           url={detail.url}
           threadRef={linkThreadRef}
           onPickerOpenChange={onThreadPickerOpenChange}
+        />
+        <PullRequestWatchMenuItem
+          environmentId={environmentId}
+          threadRef={linkThreadRef}
+          url={detail.url}
+          open={detail.state === "open"}
         />
         <MenuItem disabled={refreshing} onClick={() => void refreshFromHost()}>
           <RefreshIcon size="sm" refreshing={refreshing} />
