@@ -14,6 +14,8 @@ import * as DesktopUserData from "./DesktopUserData.ts";
 
 const COMMIT_HASH_PATTERN = /^[0-9a-f]{7,40}$/i;
 const COMMIT_HASH_DISPLAY_LENGTH = 12;
+// This build comes from our fork, not from pingdotgg/t3code's releases.
+const FORK_ABOUT_CREDITS = "Built from the pnimish/t3code fork\nhttps://github.com/pnimish/t3code";
 
 const AppPackageMetadata = Schema.Struct({
   t3codeCommitHash: Schema.optional(Schema.String),
@@ -99,6 +101,7 @@ export const make = Effect.gen(function* () {
       applicationName: environment.displayName,
       applicationVersion: environment.appVersion,
       version: Option.getOrElse(commitHash, () => "unknown"),
+      credits: FORK_ABOUT_CREDITS,
     });
 
     if (environment.platform === "win32") {

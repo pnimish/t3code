@@ -203,6 +203,7 @@ describe("DesktopAppIdentity", () => {
         assert.equal(runtimeName, `T3 Code ${stage}`);
         assert.match(runtimeName.replaceAll(" ", ""), /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/);
         assert.equal(calls.setAboutPanelOptions[0]?.applicationName, `T3 Code (${stage})`);
+        assert.match(calls.setAboutPanelOptions[0]?.credits ?? "", /pnimish\/t3code fork/);
       }),
       { calls, environment },
     );
