@@ -5,6 +5,7 @@ import {
   type OrchestrationV2ThreadProjection,
   type ScopedThreadRef,
   type ThreadRepoWorktree,
+  type ThreadPullRequestKey,
 } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -83,12 +84,13 @@ export function childRepositoryTargets(
 /**
  * The repository worktree a thread's Changes and Git actions use, or null for its own workspace.
  * `selection` is a worktree path, null for the workspace, or undefined for no choice; without
- * one, a workspace that is not a Git repository uses its first repository worktree.
+ * one, a non-Git workspace prefers a linked PR repository, then its first repository worktree.
  */
 export function resolveSelectedRepoWorktree<T extends RepositoryTarget>(input: {
   readonly repoWorktrees: ReadonlyArray<T>;
   readonly selection: string | null | undefined;
   readonly workspaceIsRepository: boolean;
+  readonly pullRequests?: ReadonlyArray<Pick<ThreadPullRequestKey, "repository">>;
 }): T | null {
   if (input.selection === null) return null;
   const chosen =
@@ -96,7 +98,15 @@ export function resolveSelectedRepoWorktree<T extends RepositoryTarget>(input: {
       ? undefined
       : input.repoWorktrees.find((entry) => entry.worktreePath === input.selection);
   if (chosen !== undefined) return chosen;
-  return input.workspaceIsRepository ? null : (input.repoWorktrees[0] ?? null);
+  if (input.workspaceIsRepository) return null;
+  for (const pullRequest of input.pullRequests ?? []) {
+    const repositoryName = pullRequest.repository.split("/").at(-1);
+    const linked = input.repoWorktrees.find(
+      (entry) => entry.repository === pullRequest.repository || entry.repository === repositoryName,
+    );
+    if (linked !== undefined) return linked;
+  }
+  return input.repoWorktrees[0] ?? null;
 }
 
 const EMPTY_THREAD_STRUCTURE_TURN_ITEMS: ReadonlyArray<ThreadStructureVisibleTurnItem> =

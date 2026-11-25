@@ -73,6 +73,7 @@ export function useSelectedThreadSourceControl() {
   const repoWorktrees = [...attached, ...discovered];
   const repoWorktree = resolveSelectedRepoWorktree({
     repoWorktrees,
+    pullRequests: selectedThread?.pullRequests ?? [],
     selection,
     workspaceIsRepository: workspaceStatus.data?.isRepo ?? true,
   });

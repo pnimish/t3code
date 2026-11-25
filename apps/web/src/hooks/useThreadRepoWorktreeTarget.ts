@@ -8,6 +8,7 @@ import { Atom } from "effect/reactivity";
 
 import { useDiffPanelStore } from "../diffPanelStore";
 import { useEnvironmentQuery } from "../state/query";
+import { useQuietThreadShell } from "../state/entities";
 import { environmentThreadDetails } from "../state/threads";
 import { vcsEnvironment } from "../state/vcs";
 
@@ -24,6 +25,7 @@ export function useThreadRepoWorktreeTarget(input: {
   /** The thread's own workspace: its worktree or the project folder. */
   readonly workspaceCwd: string | null;
 }) {
+  const thread = useQuietThreadShell(input.threadRef);
   const attached = useAtomValue(
     input.threadRef === null
       ? NO_REPO_WORKTREES
@@ -56,6 +58,7 @@ export function useThreadRepoWorktreeTarget(input: {
   const repoWorktrees = [...attached, ...discovered];
   const repoWorktree = resolveSelectedRepoWorktree({
     repoWorktrees,
+    pullRequests: thread?.pullRequests ?? [],
     selection,
     workspaceIsRepository: workspaceStatus.data?.isRepo ?? true,
   });

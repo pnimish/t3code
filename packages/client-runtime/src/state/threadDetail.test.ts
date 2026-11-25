@@ -597,6 +597,51 @@ describe("resolveSelectedRepoWorktree", () => {
     ).toBe("alpha");
   });
 
+  it("prefers repositories linked to pull requests over directory and edit order", () => {
+    const targets = childRepositoryTargets("/folder", ["admin", "auth", "web"], []);
+    const pullRequests = [{ repository: "ck12/web" }, { repository: "ck12/auth" }];
+    expect(
+      resolveSelectedRepoWorktree({
+        repoWorktrees: targets,
+        selection: undefined,
+        workspaceIsRepository: false,
+        pullRequests,
+      })?.repository,
+    ).toBe("web");
+    expect(
+      resolveSelectedRepoWorktree({
+        repoWorktrees: targets,
+        selection: "/folder/auth",
+        workspaceIsRepository: false,
+        pullRequests,
+      })?.repository,
+    ).toBe("auth");
+    expect(
+      resolveSelectedRepoWorktree({
+        repoWorktrees: targets,
+        selection: null,
+        workspaceIsRepository: false,
+        pullRequests,
+      }),
+    ).toBeNull();
+    expect(
+      resolveSelectedRepoWorktree({
+        repoWorktrees: targets,
+        selection: undefined,
+        workspaceIsRepository: false,
+        pullRequests: [{ repository: "ck12/unknown" }],
+      })?.repository,
+    ).toBe("admin");
+    expect(
+      resolveSelectedRepoWorktree({
+        repoWorktrees,
+        selection: undefined,
+        workspaceIsRepository: false,
+        pullRequests: [{ repository: "ck12/beta" }],
+      })?.repository,
+    ).toBe("beta");
+  });
+
   it("keeps a Git workspace until the user chooses a repository", () => {
     expect(
       resolveSelectedRepoWorktree({

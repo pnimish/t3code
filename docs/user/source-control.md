@@ -11,9 +11,9 @@ committed it, or fixed a conflict in it. Use the branch comparison to review eve
 against your base branch. Restore still returns the complete saved workspace.
 
 If your project folder contains separate Git checkouts, open **Changes** to review one checkout
-before opening a pull request. T3 Code finds repositories directly inside the folder and uses the
-most recent file edit it can match when the thread has no attached worktree. Use the repository
-picker to switch checkouts. The comparison shows the selected checkout's current changes, including
+before opening a pull request. T3 Code finds repositories directly inside the folder and prefers a
+checkout whose name matches a linked pull request. Otherwise, it uses an attached worktree or the
+most recent file edit it can match. Use the repository picker to switch checkouts. The comparison shows the selected checkout's current changes, including
 edits made outside the thread.
 
 On web and desktop, open the Diff pane source picker and choose **Commits** to review one local
